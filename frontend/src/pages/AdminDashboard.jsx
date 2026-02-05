@@ -31,7 +31,6 @@ import api from '../utils/api';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
-
 const AdminDashboard = () => {
   const [parcels, setParcels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +49,7 @@ const AdminDashboard = () => {
       setParcels(response.data);
       toast.success('Parcels loaded successfully');
     } catch (error) {
-      if (error.response?.status === 403) {
+      if (error.response && error.response.status === 403) {
         toast.error('Admin access required');
         navigate('/');
       } else {
@@ -79,6 +78,34 @@ const AdminDashboard = () => {
 
     try {
       await api.put(`/parcels/${selectedParcel.id}/admin`, updateData);
+      
+      // Show email notification popup
+      const parcelNumber = selectedParcel.id.toString().padStart(4, '0');
+      const userId = selectedParcel.user_id;
+      
+      let notificationMessage = '';
+      if (updateData.status !== selectedParcel.status) {
+        notificationMessage = `📧 Email sent to User #${userId} regarding status update for Parcel #${parcelNumber}`;
+      } else if (updateData.present_location !== selectedParcel.present_location) {
+        notificationMessage = `📧 Email sent to User #${userId} regarding location update for Parcel #${parcelNumber}`;
+      } else {
+        notificationMessage = `📧 Email sent to User #${userId} regarding updates for Parcel #${parcelNumber}`;
+      }
+      
+      // Show notification popup
+      toast.success(notificationMessage, {
+        duration: 4000,
+        style: {
+          background: '#E3F2FD',
+          color: '#1976D2',
+          border: '1px solid #2196F3',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: '500',
+        },
+        icon: '📧',
+      });
+      
       toast.success('Parcel updated successfully');
       setEditDialog(false);
       fetchAllParcels();
@@ -297,9 +324,7 @@ const AdminDashboard = () => {
 
         {/* Edit Dialog */}
         <Dialog open={editDialog} onClose={() => setEditDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>
-            Update Parcel #{selectedParcel?.id}
-          </DialogTitle>
+          <DialogTitle>Update Parcel #{selectedParcel && selectedParcel.id}</DialogTitle>
           <DialogContent>
             <TextField
               select
